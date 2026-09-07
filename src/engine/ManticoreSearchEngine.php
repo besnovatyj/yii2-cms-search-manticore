@@ -85,6 +85,12 @@ final class ManticoreSearchEngine implements SearchEngineInterface
      */
     private bool $fuzzyRejected = false;
 
+    /** Проверялась ли готовность ядра в этом запросе. */
+    private bool $availabilityChecked = false;
+
+    /** Причина неготовности; null — ядро готово (значимо только после проверки). */
+    private ?string $unavailableReason = null;
+
     public function __construct(
         private readonly ManticoreConnection $connection,
         private readonly ManticoreIndexSchema $schema,
@@ -117,16 +123,43 @@ final class ManticoreSearchEngine implements SearchEngineInterface
      */
     public function isAvailable(): bool
     {
+        return $this->unavailableReason() === null;
+    }
+
+    /**
+     * Почему ядро не готово: демон не отвечает или индекса в нём ещё нет.
+     *
+     * Различать обязательно. Таблица индекса создаётся только в начале полной пересборки, поэтому
+     * сразу после установки ядра демон жив и доступен, а таблицы нет — и это не поломка, а «нажмите
+     * пересборку». Проверка выполняется один раз за запрос: она стоит обращения к демону, а
+     * спрашивают её и страница состояния, и резолвер.
+     */
+    public function unavailableReason(): ?string
+    {
+        if ($this->availabilityChecked) {
+            return $this->unavailableReason;
+        }
+
+        $this->availabilityChecked = true;
+
         try {
-            return $this->schema->exists();
+            $this->unavailableReason = $this->schema->exists()
+                ? null
+                : sprintf(
+                    'Демон отвечает, но таблицы индекса «%s» в нём нет: индекс ещё ни разу не собирали этим ядром.',
+                    $this->schema->table(),
+                );
         } catch (Throwable $e) {
-            Yii::warning(
-                'Демон Manticore недоступен (' . $this->connection->dsn() . '): ' . $e->getMessage(),
-                'search/manticore',
+            $this->unavailableReason = sprintf(
+                'Демон не отвечает (%s): %s',
+                $this->connection->dsn(),
+                $e->getMessage(),
             );
 
-            return false;
+            Yii::warning('Демон Manticore недоступен: ' . $e->getMessage(), 'search/manticore');
         }
+
+        return $this->unavailableReason;
     }
 
     public function query(SearchQuery $searchQuery): SearchResult
@@ -289,6 +322,10 @@ final class ManticoreSearchEngine implements SearchEngineInterface
             ->execute();
 
         $this->stamp = null;
+
+        // Таблица индекса только что появилась (первая сборка) — проверка готовности, сделанная
+        // до этого в том же процессе, больше не действительна.
+        $this->availabilityChecked = false;
     }
 
     /**
