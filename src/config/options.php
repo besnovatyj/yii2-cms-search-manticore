@@ -10,7 +10,7 @@ declare(strict_types=1);
  * Опции модуля настроек `yii2-cms-config` для ядра поиска на Manticore.
  *
  * Пути указывают в `modules.SearchManticore.params.*` — оттуда их читает
- * {@see \Besnovatyj\SearchManticore\ManticoreSettings}.
+ * {@see \Besnovatyj\SearchManticore\settings\ManticoreSettingsFactory}.
  *
  * Здесь только то, как сайт ищет. Реквизитов подключения к демону (адрес, порт, учётная запись,
  * пароль) здесь нет намеренно: это свойство сервера, оно приезжает вместе с окружением — из

@@ -6,7 +6,7 @@
 
 declare(strict_types=1);
 
-namespace Besnovatyj\SearchManticore;
+namespace Besnovatyj\SearchManticore\engine;
 
 use Besnovatyj\Search\contracts\EngineCapabilities;
 use Besnovatyj\Search\contracts\IndexableDocument;
@@ -14,7 +14,8 @@ use Besnovatyj\Search\contracts\SearchEngineInterface;
 use Besnovatyj\Search\contracts\SearchHit;
 use Besnovatyj\Search\contracts\SearchQuery;
 use Besnovatyj\Search\contracts\SearchResult;
-use Besnovatyj\Search\services\SearchSettings;
+use Besnovatyj\Search\settings\SearchSettings;
+use Besnovatyj\SearchManticore\settings\ManticoreSettings;
 use RuntimeException;
 use Throwable;
 use Yii;
@@ -96,10 +97,10 @@ final class ManticoreSearchEngine implements SearchEngineInterface
     public function capabilities(): EngineCapabilities
     {
         return new EngineCapabilities(
-            fuzzy: $this->engineSettings->fuzzyDistance() > 0,
+            fuzzy: $this->engineSettings->fuzzyDistance > 0,
             lemmatization: true,
             highlight: true,
-            suggestion: $this->engineSettings->suggestions(),
+            suggestion: $this->engineSettings->suggestions,
             facets: true,
             sortByDate: true,
             incremental: true,
@@ -109,14 +110,13 @@ final class ManticoreSearchEngine implements SearchEngineInterface
     }
 
     /**
-     * Модуль ядра включён, демон отвечает и таблица индекса на месте.
+     * Демон отвечает и таблица индекса на месте.
+     *
+     * Проверять «включён ли модуль ядра» здесь незачем: выключенный модуль не попадает в конфиг
+     * приложения, значит фасад не видит его в реестре и до создания движка дело не доходит.
      */
     public function isAvailable(): bool
     {
-        if (!$this->engineSettings->installed()) {
-            return false;
-        }
-
         try {
             return $this->schema->exists();
         } catch (Throwable $e) {
@@ -133,7 +133,7 @@ final class ManticoreSearchEngine implements SearchEngineInterface
     {
         $match = $this->escaper->escape($searchQuery->text);
         $window = $searchQuery->offset + $searchQuery->limit;
-        $maxMatches = max($this->engineSettings->maxMatches(), $window);
+        $maxMatches = max($this->engineSettings->maxMatches, $window);
 
         $select = ['id', 'WEIGHT() * IF(boost > 0, boost, 1) AS w'];
 
@@ -189,7 +189,7 @@ final class ManticoreSearchEngine implements SearchEngineInterface
             hits: $hits,
             total: $total,
             facets: $searchQuery->withFacets ? $this->facets($match, $maxMatches) : [],
-            suggestion: $total === 0 && $searchQuery->offset === 0 && $this->engineSettings->suggestions()
+            suggestion: $total === 0 && $searchQuery->offset === 0 && $this->engineSettings->suggestions
                 ? $this->suggest($searchQuery->text)
                 : null,
         );
@@ -214,7 +214,7 @@ final class ManticoreSearchEngine implements SearchEngineInterface
             $this->schema->table(),
             self::MARK_OPEN,
             self::MARK_CLOSE,
-            max(mb_strlen($text) * 2, $this->settings->snippetLength()),
+            max(mb_strlen($text) * 2, $this->settings->snippetLength),
         );
 
         try {
@@ -400,7 +400,7 @@ final class ManticoreSearchEngine implements SearchEngineInterface
             "HIGHLIGHT({before_match='%s', after_match='%s', limit=%d, around=8, allow_empty=0}, 'title, content') AS hl",
             self::MARK_OPEN,
             self::MARK_CLOSE,
-            $this->settings->snippetLength(),
+            $this->settings->snippetLength,
         );
     }
 
@@ -413,13 +413,13 @@ final class ManticoreSearchEngine implements SearchEngineInterface
      */
     private function fuzzyOption(): string
     {
-        $distance = $this->engineSettings->fuzzyDistance();
+        $distance = $this->engineSettings->fuzzyDistance;
 
-        if (!$this->settings->fuzzy() || $distance === 0 || $this->fuzzyRejected) {
+        if (!$this->settings->fuzzy || $distance === 0 || $this->fuzzyRejected) {
             return '';
         }
 
-        return sprintf(", fuzzy=1, distance=%d, layouts='%s'", $distance, $this->engineSettings->layouts());
+        return sprintf(", fuzzy=1, distance=%d, layouts='%s'", $distance, $this->engineSettings->layouts);
     }
 
     /**

@@ -6,7 +6,7 @@
 
 declare(strict_types=1);
 
-namespace Besnovatyj\SearchManticore;
+namespace Besnovatyj\SearchManticore\engine;
 
 /**
  * Экранирование пользовательского запроса для полнотекстового выражения `MATCH()`.

@@ -11,7 +11,7 @@ declare(strict_types=1);
  *
  * Здесь только свойства индекса — то, как сайт ищет. Реквизиты подключения к демону (адрес, порт,
  * учётная запись, пароль) сюда не входят: это свойство сервера, и приходят они из секретов и
- * переменных окружения, как реквизиты базы — см. {@see \Besnovatyj\SearchManticore\ManticoreSettings}.
+ * переменных окружения, как реквизиты базы — см. {@see \Besnovatyj\SearchManticore\settings\ManticoreSettingsFactory}.
  *
  * Значения `params.*` переопределяются через модуль настроек `yii2-cms-config` (опции объявлены
  * в config/options.php).

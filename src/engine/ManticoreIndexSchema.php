@@ -6,8 +6,9 @@
 
 declare(strict_types=1);
 
-namespace Besnovatyj\SearchManticore;
+namespace Besnovatyj\SearchManticore\engine;
 
+use Besnovatyj\SearchManticore\settings\ManticoreSettings;
 use Yii;
 
 /**
@@ -51,7 +52,7 @@ final class ManticoreIndexSchema
             return $this->table;
         }
 
-        $configured = $this->settings->table();
+        $configured = $this->settings->table;
 
         return $this->table = $configured === ''
             ? self::TABLE_PREFIX . $this->siteSuffix()
@@ -133,14 +134,14 @@ final class ManticoreIndexSchema
     {
         $options = [];
 
-        if ($this->settings->morphology() !== '') {
-            $options[] = sprintf("morphology='%s'", $this->settings->morphology());
+        if ($this->settings->morphology !== '') {
+            $options[] = sprintf("morphology='%s'", $this->settings->morphology);
         }
 
         // Словарь подстрок нужен только подсказкам; выключенный, он не объявляется вовсе —
         // значение по умолчанию и есть «не собирать».
-        if ($this->settings->minInfixLen() > 0) {
-            $options[] = sprintf("min_infix_len='%d'", $this->settings->minInfixLen());
+        if ($this->settings->minInfixLen > 0) {
+            $options[] = sprintf("min_infix_len='%d'", $this->settings->minInfixLen);
         }
 
         $sql = sprintf(
@@ -186,8 +187,8 @@ final class ManticoreIndexSchema
 
         $words = static fn (string $value): string => str_replace(' ', '', mb_strtolower($value));
 
-        return $words($this->option($created, 'morphology')) === $words($this->settings->morphology())
-            && (int)$this->option($created, 'min_infix_len') === $this->settings->minInfixLen();
+        return $words($this->option($created, 'morphology')) === $words($this->settings->morphology)
+            && (int)$this->option($created, 'min_infix_len') === $this->settings->minInfixLen;
     }
 
     /**

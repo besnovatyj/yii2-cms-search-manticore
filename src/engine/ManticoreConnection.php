@@ -6,8 +6,9 @@
 
 declare(strict_types=1);
 
-namespace Besnovatyj\SearchManticore;
+namespace Besnovatyj\SearchManticore\engine;
 
+use Besnovatyj\SearchManticore\settings\ManticoreSettings;
 use PDO;
 use yii\db\Connection;
 
@@ -19,9 +20,9 @@ use yii\db\Connection;
  * Официальный HTTP-клиент сюда не тянется намеренно — он добавил бы зависимость и второй язык
  * запросов ради того, что уже умеет драйвер в сборке.
  *
- * Адрес и учётная запись берутся из настроек модуля, а не из компонента приложения: адрес демона
- * должен жить в одном месте, и это место — раздел настроек, где его видно и можно поменять без
- * правки файлов на сервере.
+ * Адрес и учётная запись берутся из настроек ядра, а не из компонента приложения: они приезжают
+ * вместе с окружением (секреты/переменные), как реквизиты базы, и не должны существовать в двух
+ * местах сразу.
  *
  * Отличия от обычного подключения к MySQL, каждое из которых обязательно:
  *
@@ -37,31 +38,33 @@ final class ManticoreConnection
     private const int CONNECT_TIMEOUT = 3;
 
     /**
-     * Соединение общее на процесс, а не на экземпляр класса.
+     * Линк к демону — один на весь запрос.
      *
-     * Так и должно быть: контейнер создаёт этот класс отдельно для ядра и для описания таблицы,
-     * а линк к демону нужен один. Дело не только в экономии — служебная сводка о запросе
-     * (`SHOW META`, из неё берётся число найденного) живёт в соединении, и прочитать её можно
-     * только тем же линком, которым был выполнен сам запрос.
+     * Это не экономия: служебная сводка о запросе (`SHOW META`, из неё берётся число найденного)
+     * живёт в соединении, и прочитать её можно только тем же линком, которым был выполнен сам
+     * запрос. Единственность обеспечивает контейнер — класс объявлен синглтоном в
+     * `config/common.php`, поэтому и ядро, и описание таблицы получают один и тот же объект.
+     * Своей статики для этого не нужно: она пережила бы и запрос, и смену настроек, а в консоли
+     * и воркере очереди — вообще всё время жизни процесса.
      */
-    private static ?Connection $connection = null;
+    private ?Connection $connection = null;
 
     public function __construct(private readonly ManticoreSettings $settings)
     {
     }
 
     /**
-     * Подключение к демону — одно на процесс.
+     * Подключение к демону — одно на запрос.
      *
      * Объект соединения создаётся лениво и сам по себе ещё ничего не открывает: PDO подключается
      * при первом запросе. Поэтому вызов метода безопасен и на страницах, где поиска не будет.
      */
     public function get(): Connection
     {
-        return self::$connection ??= new Connection([
+        return $this->connection ??= new Connection([
             'dsn' => $this->dsn(),
-            'username' => $this->settings->username(),
-            'password' => $this->settings->password(),
+            'username' => $this->settings->username,
+            'password' => $this->settings->password,
             // Ни charset, ни enableSchemaCache здесь не «настройки по вкусу» — см. описание класса.
             'charset' => null,
             'emulatePrepare' => true,
@@ -75,6 +78,6 @@ final class ManticoreConnection
     /** Адрес демона — для страницы состояния индекса и для сообщений об ошибках. */
     public function dsn(): string
     {
-        return sprintf('mysql:host=%s;port=%d', $this->settings->host(), $this->settings->port());
+        return sprintf('mysql:host=%s;port=%d', $this->settings->host, $this->settings->port);
     }
 }
