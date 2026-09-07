@@ -12,19 +12,31 @@ use Besnovatyj\Helpers\SecretReader;
 use Yii;
 
 /**
- * Типизированное чтение настроек ядра.
+ * Настройки ядра из двух источников — по природе значения, а не по вкусу.
  *
- * Модуль настроек `yii2-cms-config` умеет писать только в `modules.<Id>.params.*` и только
- * скаляры, поэтому разбор строковых значений («auto», список раскладок) собран здесь, а
- * остальной код работает с готовыми значениями.
+ * Реквизиты подключения (адрес, порт, учётная запись, пароль) — свойство сервера: их задаёт тот,
+ * кто разворачивает окружение, и меняются они вместе с окружением, а не с сайтом. Поэтому они
+ * читаются {@see SecretReader}: файл `/run/secrets/<имя>`, а если файла нет — одноимённая
+ * переменная окружения. Ровно так же приложение получает реквизиты базы и адреса доменов, и
+ * ровно поэтому переезд на другой сервер не требует захода в админку: значения приезжают вместе
+ * с окружением. Пароль при этом не попадает ни в базу, ни в дамп, ни в резервную копию настроек.
  *
- * Пароль в настройках не хранится: там лежит только имя секрета. Само значение читается
- * {@see SecretReader} — из файла `/run/secrets/<имя>`, а если файла нет, из одноимённой
- * переменной окружения. Так пароль не попадает ни в базу, ни в дамп, ни в резервную копию
- * настроек.
+ * Свойства индекса (морфология, подсказки, допуск опечаток, раскладки, окно совпадений, имя
+ * таблицы) — решение о том, как сайт ищет. Их и настраивают в админке через `yii2-cms-config`.
+ * Модуль настроек умеет писать только в `modules.<Id>.params.*` и только скаляры, поэтому разбор
+ * строковых значений («auto», список раскладок) собран здесь.
  */
 final class ManticoreSettings
 {
+    /** Имена секретов подключения. Те же имена — у переменных окружения. */
+    private const string SECRET_HOST = 'MANTICORE_HOST';
+
+    private const string SECRET_PORT = 'MANTICORE_PORT';
+
+    private const string SECRET_USER = 'MANTICORE_USER';
+
+    private const string SECRET_PASSWORD = 'MANTICORE_PASSWORD';
+
     /**
      * @param array<string, mixed> $params `params` модуля ядра
      * @param bool                 $installed включён ли модуль ядра в системе
@@ -59,31 +71,30 @@ final class ManticoreSettings
         return $this->installed;
     }
 
+    /** Адрес демона; по умолчанию — та же машина, как при обычной установке пакетом. */
     public function host(): string
     {
-        $host = trim((string)($this->params['host'] ?? ''));
-
-        return $host === '' ? '127.0.0.1' : $host;
+        return SecretReader::get(self::SECRET_HOST, '127.0.0.1');
     }
 
+    /** Порт SQL-интерфейса демона. */
     public function port(): int
     {
-        $port = (int)($this->params['port'] ?? 0);
+        $port = (int)SecretReader::get(self::SECRET_PORT, '9306');
 
         return $port > 0 ? $port : 9306;
     }
 
+    /** Учётная запись; пустая строка — подключаться анонимно (авторизация демона выключена). */
     public function username(): string
     {
-        return trim((string)($this->params['username'] ?? ''));
+        return SecretReader::get(self::SECRET_USER);
     }
 
-    /** Пароль учётной записи; пустая строка — подключение без авторизации. */
+    /** Пароль учётной записи. */
     public function password(): string
     {
-        $secret = trim((string)($this->params['passwordSecret'] ?? ''));
-
-        return $secret === '' ? '' : SecretReader::get($secret);
+        return SecretReader::get(self::SECRET_PASSWORD);
     }
 
     /** Имя таблицы индекса, заданное вручную; пустая строка — вычислять по имени базы. */

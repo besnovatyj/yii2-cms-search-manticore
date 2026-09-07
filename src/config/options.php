@@ -12,68 +12,17 @@ declare(strict_types=1);
  * Пути указывают в `modules.SearchManticore.params.*` — оттуда их читает
  * {@see \Besnovatyj\SearchManticore\ManticoreSettings}.
  *
- * Настройки делятся на две группы, и путать их не стоит. Адрес и учётная запись — свойства
- * сервера: их выставляют один раз при установке. Морфология, подсказки и допуск опечаток —
- * свойства индекса: первые две «запекаются» в него при индексации, поэтому после их изменения
- * нужна полная пересборка (`php yii Search/index/rebuild`). Пересобрать индекс сама настройка
- * не пытается: на боевом сайте это осознанное действие администратора.
+ * Здесь только то, как сайт ищет. Реквизитов подключения к демону (адрес, порт, учётная запись,
+ * пароль) здесь нет намеренно: это свойство сервера, оно приезжает вместе с окружением — из
+ * секретов и переменных окружения `MANTICORE_HOST`, `MANTICORE_PORT`, `MANTICORE_USER`,
+ * `MANTICORE_PASSWORD`, как реквизиты базы. Переносить их в админку значило бы заставлять
+ * администратора руками повторять то, что уже задано при настройке сервера.
+ *
+ * Морфология и подсказки «запекаются» в индекс при индексации, поэтому после их изменения нужна
+ * полная пересборка (`php yii Search/index/rebuild`). Пересобрать индекс сама настройка не
+ * пытается: на боевом сайте это осознанное действие администратора.
  */
 return [
-    'search_manticore_host' => [
-        'path'        => 'modules.SearchManticore.params.host',
-        'label'       => '[Поиск: Manticore] Адрес демона',
-        'description' => 'Имя хоста или IP. В docker-сборке — имя сервиса, на обычном сервере — 127.0.0.1',
-        'category'    => 'Search',
-        'rules'       => [
-            ['required'],
-            ['string', 'max' => 255],
-        ],
-        'inputOptions' => [
-            'type' => 'text',
-        ],
-    ],
-
-    'search_manticore_port' => [
-        'path'        => 'modules.SearchManticore.params.port',
-        'label'       => '[Поиск: Manticore] Порт демона',
-        'description' => 'SQL-интерфейс демона, по умолчанию 9306',
-        'category'    => 'Search',
-        'rules'       => [
-            ['required'],
-            ['integer', 'min' => 1, 'max' => 65535],
-        ],
-        'inputOptions' => [
-            'type' => 'number',
-        ],
-    ],
-
-    'search_manticore_username' => [
-        'path'        => 'modules.SearchManticore.params.username',
-        'label'       => '[Поиск: Manticore] Учётная запись',
-        'description' => 'Пусто — подключаться анонимно (авторизация в демоне выключена)',
-        'category'    => 'Search',
-        'rules'       => [
-            ['string', 'max' => 128],
-        ],
-        'inputOptions' => [
-            'type' => 'text',
-        ],
-    ],
-
-    'search_manticore_password_secret' => [
-        'path'        => 'modules.SearchManticore.params.passwordSecret',
-        'label'       => '[Поиск: Manticore] Имя секрета с паролем',
-        'description' => 'Сам пароль здесь не хранится: он читается из /run/secrets/<имя> или из одноимённой переменной окружения',
-        'category'    => 'Search',
-        'rules'       => [
-            ['match', 'pattern' => '/^[A-Za-z0-9_.-]*$/'],
-            ['string', 'max' => 128],
-        ],
-        'inputOptions' => [
-            'type' => 'text',
-        ],
-    ],
-
     'search_manticore_table' => [
         'path'        => 'modules.SearchManticore.params.table',
         'label'       => '[Поиск: Manticore] Имя таблицы индекса',
