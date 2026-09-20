@@ -25,8 +25,9 @@ declare(strict_types=1);
 return [
     'search_manticore_table' => [
         'path'        => 'modules.SearchManticore.params.table',
-        'label'       => '[Поиск: Manticore] Имя таблицы индекса',
+        'label'       => 'Имя таблицы индекса',
         'description' => 'Пусто — имя составляется из имени базы проекта, чтобы несколько сайтов могли делить один демон',
+        'group'       => 'Manticore',
         'category'    => 'Search',
         'rules'       => [
             ['match', 'pattern' => '/^[A-Za-z_][A-Za-z0-9_]*$|^$/'],
@@ -39,8 +40,9 @@ return [
 
     'search_manticore_morphology' => [
         'path'        => 'modules.SearchManticore.params.morphology',
-        'label'       => '[Поиск: Manticore] Морфология',
+        'label'       => 'Морфология',
         'description' => 'После смены нужна полная переиндексация',
+        'group'       => 'Manticore',
         'category'    => 'Search',
         'rules'       => [
             ['required'],
@@ -61,8 +63,9 @@ return [
 
     'search_manticore_suggestions' => [
         'path'        => 'modules.SearchManticore.params.suggestions',
-        'label'       => '[Поиск: Manticore] Подсказки «возможно, вы имели в виду»',
+        'label'       => 'Подсказки «возможно, вы имели в виду»',
         'description' => 'Требуют словаря подстрок: индекс вырастает в несколько раз. После смены нужна переиндексация',
+        'group'       => 'Manticore',
         'category'    => 'Search',
         'rules'       => [
             ['boolean'],
@@ -74,8 +77,9 @@ return [
 
     'search_manticore_fuzzy_distance' => [
         'path'        => 'modules.SearchManticore.params.fuzzyDistance',
-        'label'       => '[Поиск: Manticore] Допуск опечаток',
+        'label'       => 'Допуск опечаток',
         'description' => 'Сколько букв в слове может не совпасть. 0 — искать без опечаток',
+        'group'       => 'Manticore',
         'category'    => 'Search',
         'rules'       => [
             ['required'],
@@ -88,8 +92,9 @@ return [
 
     'search_manticore_layouts' => [
         'path'        => 'modules.SearchManticore.params.layouts',
-        'label'       => '[Поиск: Manticore] Раскладки клавиатуры',
+        'label'       => 'Раскладки клавиатуры',
         'description' => 'Распознавание запроса, набранного не в той раскладке: «ghbdtn» → «привет»',
+        'group'       => 'Manticore',
         'category'    => 'Search',
         'rules'       => [
             ['match', 'pattern' => '/^(auto|[a-z]{2}(,[a-z]{2})*)?$/'],
@@ -102,8 +107,9 @@ return [
 
     'search_manticore_max_matches' => [
         'path'        => 'modules.SearchManticore.params.maxMatches',
-        'label'       => '[Поиск: Manticore] Окно совпадений',
+        'label'       => 'Окно совпадений',
         'description' => 'Сколько совпадений демон держит в памяти на запрос: глубина листания и точность счётчиков',
+        'group'       => 'Manticore',
         'category'    => 'Search',
         'rules'       => [
             ['required'],
