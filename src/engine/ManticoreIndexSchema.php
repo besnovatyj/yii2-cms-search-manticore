@@ -121,6 +121,34 @@ final class ManticoreIndexSchema
     }
 
     /**
+     * Размер таблицы индекса в байтах: `disk_bytes` + `ram_bytes` из `SHOW TABLE … STATUS`.
+     * Таблицы нет — 0; демон не сообщил ни одного из счётчиков — null.
+     */
+    public function bytes(): ?int
+    {
+        if (!$this->exists()) {
+            return 0;
+        }
+
+        $rows = $this->connection->get()
+            ->createCommand('SHOW TABLE ' . $this->table() . ' STATUS')
+            ->queryAll();
+
+        $bytes = null;
+
+        foreach ($rows as $row) {
+            $values = array_values($row);
+            $name = (string)($values[0] ?? '');
+
+            if ($name === 'disk_bytes' || $name === 'ram_bytes') {
+                $bytes = ($bytes ?? 0) + (int)($values[1] ?? 0);
+            }
+        }
+
+        return $bytes;
+    }
+
+    /**
      * Создать таблицу индекса.
      *
      * Поля и атрибуты различаются по назначению: `title`, `content`, `keywords` — полнотекстовые

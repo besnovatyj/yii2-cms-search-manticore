@@ -10,6 +10,7 @@ namespace Besnovatyj\SearchManticore\engine;
 
 use Besnovatyj\Search\contracts\EngineCapabilities;
 use Besnovatyj\Search\contracts\IndexableDocument;
+use Besnovatyj\Search\contracts\PurgeableEngine;
 use Besnovatyj\Search\contracts\SearchEngineInterface;
 use Besnovatyj\Search\contracts\SearchHit;
 use Besnovatyj\Search\contracts\SearchQuery;
@@ -44,7 +45,7 @@ use yii\helpers\Html;
  *
  * Разговор с демоном идёт по протоколу MySQL обычным драйвером PHP — см. {@see ManticoreConnection}.
  */
-final class ManticoreSearchEngine implements SearchEngineInterface
+final class ManticoreSearchEngine implements SearchEngineInterface, PurgeableEngine
 {
     /** Веса полей при ранжировании: совпадение в заголовке весомее совпадения в теле текста. */
     private const int TITLE_WEIGHT = 10;
@@ -377,6 +378,27 @@ final class ManticoreSearchEngine implements SearchEngineInterface
         $this->connection->get()
             ->createCommand(sprintf('DELETE FROM %s WHERE id = %d', $this->schema->table(), $documentId))
             ->execute();
+    }
+
+    /**
+     * Стереть индекс: таблица удаляется из демона и создастся заново при следующей пересборке.
+     */
+    public function purge(): void
+    {
+        $this->schema->drop();
+
+        $this->stamp = null;
+        $this->pending = [];
+        $this->pendingBytes = 0;
+        $this->availabilityChecked = false;
+    }
+
+    /**
+     * Сколько занимает таблица индекса в демоне (на диске и в памяти).
+     */
+    public function storageBytes(): ?int
+    {
+        return $this->schema->bytes();
     }
 
     /**

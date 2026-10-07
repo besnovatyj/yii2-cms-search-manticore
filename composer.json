@@ -47,7 +47,7 @@
     "besnovatyj/yii2-cms-contracts": "^3.0",
     "besnovatyj/yii2-cms-helpers": "^1.0",
     "besnovatyj/yii2-cms-kernel": "^1.0",
-    "besnovatyj/yii2-cms-search": "^1.0"
+    "besnovatyj/yii2-cms-search": "^1.4"
   },
   "require-dev": {
     "roave/security-advisories": "dev-latest"
